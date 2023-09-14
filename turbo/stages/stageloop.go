@@ -22,7 +22,6 @@ import (
 	"github.com/ledgerwatch/erigon/turbo/engineapi/engine_helpers"
 	"github.com/ledgerwatch/erigon/turbo/services"
 
-	"github.com/ledgerwatch/erigon/cmd/sentry/sentry"
 	"github.com/ledgerwatch/erigon/consensus/bor"
 	"github.com/ledgerwatch/erigon/consensus/misc"
 	"github.com/ledgerwatch/erigon/core/rawdb"
@@ -33,6 +32,7 @@ import (
 	"github.com/ledgerwatch/erigon/eth/stagedsync"
 	"github.com/ledgerwatch/erigon/eth/stagedsync/stages"
 	"github.com/ledgerwatch/erigon/p2p"
+	"github.com/ledgerwatch/erigon/p2p/sentry/sentry_multi_client"
 	"github.com/ledgerwatch/erigon/turbo/shards"
 	"github.com/ledgerwatch/erigon/turbo/stages/bodydownload"
 	"github.com/ledgerwatch/erigon/turbo/stages/headerdownload"
@@ -431,7 +431,7 @@ func NewDefaultStages(ctx context.Context,
 	db kv.RwDB,
 	p2pCfg p2p.Config,
 	cfg *ethconfig.Config,
-	controlServer *sentry.MultiClient,
+	controlServer *sentry_multi_client.MultiClient,
 	notifications *shards.Notifications,
 	snapDownloader proto_downloader.DownloaderClient,
 	blockReader services.FullBlockReader,
@@ -487,7 +487,7 @@ func NewDefaultStages(ctx context.Context,
 func NewPipelineStages(ctx context.Context,
 	db kv.RwDB,
 	cfg *ethconfig.Config,
-	controlServer *sentry.MultiClient,
+	controlServer *sentry_multi_client.MultiClient,
 	notifications *shards.Notifications,
 	snapDownloader proto_downloader.DownloaderClient,
 	blockReader services.FullBlockReader,
@@ -537,7 +537,7 @@ func NewPipelineStages(ctx context.Context,
 		runInTestMode)
 }
 
-func NewInMemoryExecution(ctx context.Context, db kv.RwDB, cfg *ethconfig.Config, controlServer *sentry.MultiClient,
+func NewInMemoryExecution(ctx context.Context, db kv.RwDB, cfg *ethconfig.Config, controlServer *sentry_multi_client.MultiClient,
 	dirs datadir.Dirs, notifications *shards.Notifications, blockReader services.FullBlockReader, blockWriter *blockio.BlockWriter, agg *state.AggregatorV3,
 	logger log.Logger) (*stagedsync.Sync, error) {
 	return stagedsync.New(
