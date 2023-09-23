@@ -317,15 +317,14 @@ func (u *TransferLogIndexerUnwinder) UnwindAddress(tx kv.RwTx, addr common.Addre
 	// Replace counter
 	if !bm.IsEmpty() {
 		newCounter := lastCounter + bm.GetCardinality()
+		var newValue []byte
 		if isSingleChunkOptimized && newCounter <= 256 {
-			// Write optimized counter
-			if err := WriteOptimizedCounter(tx, u.counterBucket, addr.Bytes(), newCounter, true); err != nil {
-				return err
-			}
+			newValue = OptimizedCounterSerializer(newCounter)
 		} else {
-			if err := WriteLastCounter(tx, u.counterBucket, addr, newCounter); err != nil {
-				return err
-			}
+			newValue = LastCounterSerializer(newCounter)
+		}
+		if err := tx.Put(u.counterBucket, addr.Bytes(), newValue); err != nil {
+			return err
 		}
 	} else {
 		// Rewrite previous counter (if it exists) pointing it to last chunk

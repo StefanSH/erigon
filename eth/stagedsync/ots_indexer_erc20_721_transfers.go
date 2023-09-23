@@ -277,7 +277,8 @@ func (h *TransferLogIndexerHandler) writeOptimizedChunkAndCounter(tx kv.RwTx, k 
 
 	// Write optimized counter
 	prevCounter += uint64(buf.Len()) / 8
-	if err := WriteOptimizedCounter(tx, h.counterBucket, addr, prevCounter, false); err != nil {
+	v := OptimizedCounterSerializer(prevCounter)
+	if err := tx.Put(h.counterBucket, addr, v); err != nil {
 		return 0, err
 	}
 
@@ -292,7 +293,8 @@ func (h *TransferLogIndexerHandler) writeRegularChunkAndCounter(tx kv.RwTx, k []
 
 	// Write updated counter
 	prevCounter += uint64(buf.Len()) / 8
-	if err := WriteStandardCounter(tx, h.counterBucket, addr, prevCounter, chunkKey[length.Addr:]); err != nil {
+	v := RegularCounterSerializer(prevCounter, chunkKey[length.Addr:])
+	if err := tx.Put(h.counterBucket, addr, v); err != nil {
 		return 0, err
 	}
 
