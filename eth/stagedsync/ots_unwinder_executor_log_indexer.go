@@ -12,6 +12,7 @@ import (
 	"github.com/ledgerwatch/erigon-lib/common/length"
 	"github.com/ledgerwatch/erigon-lib/kv"
 	"github.com/ledgerwatch/erigon-lib/kv/bitmapdb"
+	"github.com/ledgerwatch/erigon/ots/indexer"
 	"github.com/ledgerwatch/erigon/turbo/services"
 	"github.com/ledgerwatch/log/v3"
 	"golang.org/x/exp/slices"
@@ -319,9 +320,9 @@ func (u *TransferLogIndexerUnwinder) UnwindAddress(tx kv.RwTx, addr common.Addre
 		newCounter := lastCounter + bm.GetCardinality()
 		var newValue []byte
 		if isSingleChunkOptimized && newCounter <= 256 {
-			newValue = OptimizedCounterSerializer(newCounter)
+			newValue = indexer.OptimizedCounterSerializer(newCounter)
 		} else {
-			newValue = LastCounterSerializer(newCounter)
+			newValue = indexer.LastCounterSerializer(newCounter)
 		}
 		if err := tx.Put(u.counterBucket, addr.Bytes(), newValue); err != nil {
 			return err
