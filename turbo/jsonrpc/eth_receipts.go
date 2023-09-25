@@ -5,12 +5,11 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"github.com/ledgerwatch/log/v3"
 	"math/big"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/holiman/uint256"
-	"github.com/ledgerwatch/log/v3"
-
 	"github.com/ledgerwatch/erigon-lib/chain"
 	"github.com/ledgerwatch/erigon-lib/common"
 	"github.com/ledgerwatch/erigon-lib/common/fixedgas"
@@ -743,9 +742,11 @@ func marshalReceipt(receipt *types.Receipt, txn types.Transaction, chainConfig *
 		"type":              hexutil.Uint(txn.Type()),
 		"gasUsed":           hexutil.Uint64(receipt.GasUsed),
 		"cumulativeGasUsed": hexutil.Uint64(receipt.CumulativeGasUsed),
-		"contractAddress":   nil,
 		"logs":              receipt.Logs,
 		"logsBloom":         types.CreateBloom(types.Receipts{receipt}),
+		"value":             txn.GetValue(),
+		"isContractDeploy":  txn.IsContractDeploy(),
+		"timestamp":         header.Time,
 	}
 
 	if !chainConfig.IsLondon(header.Number.Uint64()) {
