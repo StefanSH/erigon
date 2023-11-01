@@ -112,7 +112,7 @@ func (bp *PeersByMinBlock) Pop() interface{} {
 	old := *bp
 	n := len(old)
 	x := old[n-1]
-	old[n-1] = PeerRef{}
+	old[n-1] = PeerRef{} // avoid memory leak
 	*bp = old[0 : n-1]
 	return x
 }
@@ -383,6 +383,9 @@ func runPeer(
 		if err != nil {
 			return p2p.NewPeerError(p2p.PeerErrorMessageReceive, p2p.DiscNetworkError, err, "sentry.runPeer: ReadMsg error")
 		}
+
+		peerInfo.peer.BytesTransfered += int(msg.Size)
+
 		if msg.Size > eth.ProtocolMaxMsgSize {
 			msg.Discard()
 			return p2p.NewPeerError(p2p.PeerErrorMessageSizeLimit, p2p.DiscSubprotocolError, nil, fmt.Sprintf("sentry.runPeer: message is too large %d, limit %d", msg.Size, eth.ProtocolMaxMsgSize))
@@ -624,7 +627,7 @@ func NewGrpcServer(ctx context.Context, dialCandidates func() enode.Iterator, re
 				ss.GoodPeers.Store(peerID, peerInfo)
 				ss.sendNewPeerToClients(gointerfaces.ConvertHashToH512(peerID))
 				getBlockHeadersErr := ss.getBlockHeaders(ctx, *peerBestHash, peerID)
-				if err != nil {
+				if getBlockHeadersErr != nil {
 					return p2p.NewPeerError(p2p.PeerErrorFirstMessageSend, p2p.DiscNetworkError, getBlockHeadersErr, "p2p.Protocol.Run getBlockHeaders failure")
 				}
 
@@ -1038,6 +1041,15 @@ func (ss *GrpcServer) Peers(_ context.Context, _ *emptypb.Empty) (*proto_sentry.
 	return &reply, nil
 }
 
+func (ss *GrpcServer) DiagnosticsPeersData() []*p2p.PeerInfo {
+	if ss.P2pServer == nil {
+		return []*p2p.PeerInfo{}
+	}
+
+	peers := ss.P2pServer.PeersInfo()
+	return peers
+}
+
 func (ss *GrpcServer) SimplePeerCount() map[uint]int {
 	counts := map[uint]int{}
 	ss.rangePeers(func(peerInfo *PeerInfo) bool {
@@ -1207,6 +1219,15 @@ func (ss *GrpcServer) PeerEvents(req *proto_sentry.PeerEventsRequest, server pro
 	case <-server.Context().Done():
 		return nil
 	}
+}
+
+func (ss *GrpcServer) AddPeer(_ context.Context, req *proto_sentry.AddPeerRequest) (*proto_sentry.AddPeerReply, error) {
+	node, err := enode.Parse(enode.ValidSchemes, req.Url)
+	if err != nil {
+		return nil, err
+	}
+	ss.P2pServer.AddPeer(node)
+	return &proto_sentry.AddPeerReply{Success: true}, nil
 }
 
 func (ss *GrpcServer) NodeInfo(_ context.Context, _ *emptypb.Empty) (*proto_types.NodeInfoReply, error) {

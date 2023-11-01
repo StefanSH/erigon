@@ -3,7 +3,7 @@ package jsonrpc
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"github.com/ledgerwatch/erigon-lib/common/hexutil"
 	"math/big"
 
 	"github.com/ledgerwatch/erigon-lib/common"
@@ -12,7 +12,6 @@ import (
 	"github.com/ledgerwatch/erigon-lib/gointerfaces/txpool"
 	"github.com/ledgerwatch/erigon-lib/gointerfaces/types"
 
-	"github.com/ledgerwatch/erigon/common/hexutil"
 	"github.com/ledgerwatch/erigon/core/rawdb"
 	types2 "github.com/ledgerwatch/erigon/core/types"
 	"github.com/ledgerwatch/erigon/rpc"
@@ -42,7 +41,6 @@ func (api *APIImpl) GetTransactionByHash(ctx context.Context, txnHash common.Has
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("Found block num %d, ok %t\n", blockNum, ok)
 	}
 	if ok {
 		block, err := api.blockByNumberWithSenders(tx, blockNum)

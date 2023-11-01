@@ -32,14 +32,15 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/ledgerwatch/erigon-lib/chain"
+	"github.com/ledgerwatch/erigon-lib/chain/networkname"
 	libcommon "github.com/ledgerwatch/erigon-lib/common"
+	"github.com/ledgerwatch/erigon-lib/common/hexutil"
 	"github.com/ledgerwatch/erigon-lib/kv"
 	"github.com/ledgerwatch/erigon-lib/kv/kvcfg"
 	"github.com/ledgerwatch/erigon-lib/kv/mdbx"
 	"github.com/ledgerwatch/erigon-lib/kv/rawdbv3"
 
 	"github.com/ledgerwatch/erigon/common"
-	"github.com/ledgerwatch/erigon/common/hexutil"
 	"github.com/ledgerwatch/erigon/consensus/ethash"
 	"github.com/ledgerwatch/erigon/consensus/merge"
 	"github.com/ledgerwatch/erigon/core/rawdb"
@@ -48,7 +49,6 @@ import (
 	"github.com/ledgerwatch/erigon/crypto"
 	"github.com/ledgerwatch/erigon/eth/ethconfig"
 	"github.com/ledgerwatch/erigon/params"
-	"github.com/ledgerwatch/erigon/params/networkname"
 	"github.com/ledgerwatch/erigon/turbo/trie"
 )
 
@@ -348,10 +348,9 @@ func HoleskyGenesisBlock() *types.Genesis {
 	return &types.Genesis{
 		Config:     params.HoleskyChainConfig,
 		Nonce:      4660,
-		ExtraData:  hexutil.MustDecode("0x686f77206d7563682069732074686520666973683f"),
 		GasLimit:   25000000,
 		Difficulty: big.NewInt(1),
-		Timestamp:  1694786100,
+		Timestamp:  1695902100,
 		Alloc:      readPrealloc("allocs/holesky.json"),
 	}
 }

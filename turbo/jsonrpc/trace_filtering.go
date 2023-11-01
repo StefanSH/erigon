@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ledgerwatch/erigon-lib/common/hexutil"
 
 	"github.com/RoaringBitmap/roaring/roaring64"
 	jsoniter "github.com/json-iterator/go"
@@ -17,7 +18,6 @@ import (
 	"github.com/ledgerwatch/erigon-lib/kv/order"
 	"github.com/ledgerwatch/erigon-lib/kv/rawdbv3"
 
-	"github.com/ledgerwatch/erigon/common/hexutil"
 	"github.com/ledgerwatch/erigon/consensus"
 	"github.com/ledgerwatch/erigon/consensus/ethash"
 	"github.com/ledgerwatch/erigon/core"
@@ -618,7 +618,7 @@ func (api *TraceAPIImpl) filterV3(ctx context.Context, dbtx kv.TemporalTx, fromB
 			// TODO(yperbasis) proper rewards for Gnosis
 
 			// if we are in POS
-			// we dont check for uncles or block rewards
+			// we don't check for uncles or block rewards
 			if isPos {
 				continue
 			}

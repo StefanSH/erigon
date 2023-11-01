@@ -18,6 +18,7 @@ package tracetest
 
 import (
 	"encoding/json"
+	"github.com/ledgerwatch/erigon-lib/common/hexutil"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -28,10 +29,7 @@ import (
 	"github.com/ledgerwatch/erigon-lib/chain"
 	libcommon "github.com/ledgerwatch/erigon-lib/common"
 	"github.com/ledgerwatch/erigon-lib/common/hexutility"
-	"github.com/stretchr/testify/require"
-
 	"github.com/ledgerwatch/erigon/common"
-	"github.com/ledgerwatch/erigon/common/hexutil"
 	"github.com/ledgerwatch/erigon/common/math"
 	"github.com/ledgerwatch/erigon/core"
 	"github.com/ledgerwatch/erigon/core/types"
@@ -39,13 +37,12 @@ import (
 	"github.com/ledgerwatch/erigon/core/vm/evmtypes"
 	"github.com/ledgerwatch/erigon/crypto"
 	"github.com/ledgerwatch/erigon/eth/tracers"
+	_ "github.com/ledgerwatch/erigon/eth/tracers/js"
+	_ "github.com/ledgerwatch/erigon/eth/tracers/native"
 	"github.com/ledgerwatch/erigon/params"
 	"github.com/ledgerwatch/erigon/tests"
 	"github.com/ledgerwatch/erigon/turbo/stages/mock"
-
-	// Force-load native and js packages, to trigger registration
-	_ "github.com/ledgerwatch/erigon/eth/tracers/js"
-	_ "github.com/ledgerwatch/erigon/eth/tracers/native"
+	"github.com/stretchr/testify/require"
 )
 
 type callContext struct {
@@ -58,6 +55,7 @@ type callContext struct {
 
 // callLog is the result of LOG opCode
 type callLog struct {
+	Index   uint64            `json:"index"`
 	Address libcommon.Address `json:"address"`
 	Topics  []libcommon.Hash  `json:"topics"`
 	Data    hexutility.Bytes  `json:"data"`

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	libcommon "github.com/ledgerwatch/erigon-lib/common"
 	"github.com/ledgerwatch/log/v3"
 
 	"github.com/ledgerwatch/erigon/cl/cltypes"
@@ -15,6 +16,7 @@ import (
 func (f *ForkChoiceStore) OnBlock(block *cltypes.SignedBeaconBlock, newPayload, fullValidation bool) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.headHash = libcommon.Hash{}
 	start := time.Now()
 	blockRoot, err := block.Block.HashSSZ()
 	if err != nil {
@@ -29,7 +31,17 @@ func (f *ForkChoiceStore) OnBlock(block *cltypes.SignedBeaconBlock, newPayload, 
 		return nil
 	}
 
-	config := f.forkGraph.Config()
+	var invalidBlock bool
+	if newPayload && f.engine != nil {
+		if invalidBlock, err = f.engine.NewPayload(block.Block.Body.ExecutionPayload, &block.Block.ParentRoot); err != nil {
+			if invalidBlock {
+				f.forkGraph.MarkHeaderAsInvalid(blockRoot)
+			}
+			log.Warn("newPayload failed", "err", err)
+			return err
+		}
+	}
+
 	lastProcessedState, status, err := f.forkGraph.AddChainSegment(block, fullValidation)
 	if err != nil {
 		return err
@@ -38,6 +50,7 @@ func (f *ForkChoiceStore) OnBlock(block *cltypes.SignedBeaconBlock, newPayload, 
 	case fork_graph.PreValidated:
 		return nil
 	case fork_graph.Success:
+		f.updateChildren(block.Block.Slot-1, block.Block.ParentRoot, blockRoot) // parent slot can be innacurate
 	case fork_graph.BelowAnchor:
 		log.Debug("replay block", "code", status)
 		return nil
@@ -47,27 +60,17 @@ func (f *ForkChoiceStore) OnBlock(block *cltypes.SignedBeaconBlock, newPayload, 
 	if block.Block.Body.ExecutionPayload != nil {
 		f.eth2Roots.Add(blockRoot, block.Block.Body.ExecutionPayload.BlockHash)
 	}
-	var invalidBlock bool
-	if newPayload && f.engine != nil {
-		if invalidBlock, err = f.engine.NewPayload(block.Block.Body.ExecutionPayload, &block.Block.ParentRoot); err != nil {
-			log.Warn("newPayload failed", "err", err)
-			return err
-		}
-	}
-	if invalidBlock {
-		f.forkGraph.MarkHeaderAsInvalid(blockRoot)
-	}
 
 	if block.Block.Slot > f.highestSeen {
 		f.highestSeen = block.Block.Slot
 	}
 	// Add proposer score boost if the block is timely
-	timeIntoSlot := (f.time - f.forkGraph.GenesisTime()) % lastProcessedState.BeaconConfig().SecondsPerSlot
-	isBeforeAttestingInterval := timeIntoSlot < config.SecondsPerSlot/config.IntervalsPerSlot
-	if f.Slot() == block.Block.Slot && isBeforeAttestingInterval {
+	timeIntoSlot := (f.time - f.genesisTime) % lastProcessedState.BeaconConfig().SecondsPerSlot
+	isBeforeAttestingInterval := timeIntoSlot < f.beaconCfg.SecondsPerSlot/f.beaconCfg.IntervalsPerSlot
+	if f.Slot() == block.Block.Slot && isBeforeAttestingInterval && f.proposerBoostRoot == (libcommon.Hash{}) {
 		f.proposerBoostRoot = blockRoot
 	}
-	if lastProcessedState.Slot()%f.forkGraph.Config().SlotsPerEpoch == 0 {
+	if lastProcessedState.Slot()%f.beaconCfg.SlotsPerEpoch == 0 {
 		if err := freezer.PutObjectSSZIntoFreezer("beaconState", "caplin_core", lastProcessedState.Slot(), lastProcessedState, f.recorder); err != nil {
 			return err
 		}
@@ -85,6 +88,7 @@ func (f *ForkChoiceStore) OnBlock(block *cltypes.SignedBeaconBlock, newPayload, 
 	if err := statechange.ProcessJustificationBitsAndFinality(lastProcessedState, nil); err != nil {
 		return err
 	}
+	f.operationsPool.NotifyBlock(block.Block)
 	f.updateUnrealizedCheckpoints(lastProcessedState.CurrentJustifiedCheckpoint().Copy(), lastProcessedState.FinalizedCheckpoint().Copy())
 	// Set the changed value pre-simulation
 	lastProcessedState.SetPreviousJustifiedCheckpoint(previousJustifiedCheckpoint)

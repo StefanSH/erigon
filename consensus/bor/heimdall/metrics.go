@@ -2,10 +2,8 @@ package heimdall
 
 import (
 	"context"
+	"github.com/ledgerwatch/erigon-lib/metrics"
 	"time"
-
-	"github.com/VictoriaMetrics/metrics"
-	metrics2 "github.com/VictoriaMetrics/metrics"
 )
 
 type (
@@ -13,16 +11,21 @@ type (
 	requestType    string
 
 	meter struct {
-		request map[bool]*metrics2.Counter // map[isSuccessful]metrics.Meter
-		timer   *metrics2.Summary
+		request map[bool]metrics.Counter // map[isSuccessful]metrics.Meter
+		timer   metrics.Summary
 	}
 )
 
 const (
-	stateSyncRequest       requestType = "state-sync"
-	spanRequest            requestType = "span"
-	checkpointRequest      requestType = "checkpoint"
-	checkpointCountRequest requestType = "checkpoint-count"
+	stateSyncRequest          requestType = "state-sync"
+	spanRequest               requestType = "span"
+	checkpointRequest         requestType = "checkpoint"
+	checkpointCountRequest    requestType = "checkpoint-count"
+	milestoneRequest          requestType = "milestone"
+	milestoneCountRequest     requestType = "milestone-count"
+	milestoneNoAckRequest     requestType = "milestone-no-ack"
+	milestoneLastNoAckRequest requestType = "milestone-last-no-ack"
+	milestoneIDRequest        requestType = "milestone-id"
 )
 
 func withRequestType(ctx context.Context, reqType requestType) context.Context {
@@ -37,28 +40,28 @@ func getRequestType(ctx context.Context) (requestType, bool) {
 var (
 	requestMeters = map[requestType]meter{
 		stateSyncRequest: {
-			request: map[bool]*metrics2.Counter{
+			request: map[bool]metrics.Counter{
 				true:  metrics.GetOrCreateCounter("client_requests_statesync_valid"),
 				false: metrics.GetOrCreateCounter("client_requests_statesync_invalid"),
 			},
 			timer: metrics.GetOrCreateSummary("client_requests_statesync_duration"),
 		},
 		spanRequest: {
-			request: map[bool]*metrics2.Counter{
+			request: map[bool]metrics.Counter{
 				true:  metrics.GetOrCreateCounter("client_requests_span_valid"),
 				false: metrics.GetOrCreateCounter("client_requests_span_invalid"),
 			},
 			timer: metrics.GetOrCreateSummary("client_requests_span_duration"),
 		},
 		checkpointRequest: {
-			request: map[bool]*metrics2.Counter{
+			request: map[bool]metrics.Counter{
 				true:  metrics.GetOrCreateCounter("client_requests_checkpoint_valid"),
 				false: metrics.GetOrCreateCounter("client_requests_checkpoint_invalid"),
 			},
 			timer: metrics.GetOrCreateSummary("client_requests_checkpoint_duration"),
 		},
 		checkpointCountRequest: {
-			request: map[bool]*metrics2.Counter{
+			request: map[bool]metrics.Counter{
 				true:  metrics.GetOrCreateCounter("client_requests_checkpointcount_valid"),
 				false: metrics.GetOrCreateCounter("client_requests_checkpointcount_invalid"),
 			},
